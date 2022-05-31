@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "funcoes.c"
 
 int main(){
@@ -41,7 +38,7 @@ int main(){
                 //free em enderecos de memoria alocados dinamicamente (evitar memory leak)
                 free(data);
 
-                system("cls || clear");
+                //system("cls || clear");
                 printf("Comprimido com sucesso!\n\n");
             }
             else{
