@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "structs.c"
-
 //retorna o maior valor entre dois inteiros
 int max(int a, int b){
     return a > b ? a : b;
@@ -52,7 +47,7 @@ void montando_fila_de_prioridade(No **head, long *freq){
     }
 }
 
-//printa a fila de prioridade (DEBUG)
+//printa a fila de prioridade
 void printar_fila(No *no){
     if (no == NULL) return;
     printf("%d %u\n", no->freq, no->item);
@@ -267,4 +262,114 @@ void comprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, long filele
 
     //fechando o ponteiro do arquivo
     fclose(compressed);
+}
+
+//calcula o numero de bits que sao lixo no ultimo byte
+int calcula_bits_lixo(unsigned char byte){
+    byte = byte >> 5;
+    return (int)byte;
+}
+
+int numero_de_bytes_na_arvore_header(unsigned char primeiro_byte, unsigned char segundo_byte){
+    unsigned char mask = 31; //00011111 00000000
+    return (((int)(primeiro_byte & mask) << 8) + (int)segundo_byte);
+}
+
+No_d *criar_no_d(unsigned char item, short eh_galho){
+    No_d *novo_no_d = malloc(sizeof(No_d));
+    novo_no_d->dir = NULL;
+    novo_no_d->esq = NULL;
+    novo_no_d->item = item;
+    novo_no_d->eh_galho = eh_galho;
+
+    return novo_no_d;
+}
+
+void printar_arvore_d(No_d *no){
+    if (no == NULL) return;
+    printf("%c", no->item);
+    printar_arvore_d(no->esq);
+    printar_arvore_d(no->dir);
+}
+
+void limpar_memoria_arvore_de_descompressao(No_d *no){
+    if (no == NULL) return;
+    limpar_memoria_arvore_de_descompressao(no->esq);
+    limpar_memoria_arvore_de_descompressao(no->dir);
+    free(no);
+}
+
+void montando_arvore_de_huffman_para_descomprimir(No_d **root, No_d *atual, unsigned char *data, int indice_maximo, long *i){
+    if (*i >= indice_maximo) return;
+    if (*root == NULL){
+        *root = criar_no_d(data[*i], 1);
+        (*i)++;
+        atual = *root;
+        montando_arvore_de_huffman_para_descomprimir(root, atual, data, indice_maximo, i);
+    }
+    else{
+        short eh_galho = 0;
+        if (data[*i] == (unsigned char)'*') eh_galho = 1;
+        if (data[*i] == (unsigned char)'\\') (*i)++;
+        if (atual->eh_galho) atual->esq = criar_no_d(data[*i], eh_galho);
+
+        (*i)++;
+        if (eh_galho) montando_arvore_de_huffman_para_descomprimir(root, atual->esq, data, indice_maximo, i);
+
+        eh_galho = 0;
+        if (data[*i] == (unsigned char)'*') eh_galho = 1;
+        if (data[*i] == (unsigned char)'\\') (*i)++;
+        if (atual->eh_galho) atual->dir = criar_no_d(data[*i], eh_galho);
+
+        (*i)++;
+        if (eh_galho) montando_arvore_de_huffman_para_descomprimir(root, atual->dir, data, indice_maximo, i);
+    }
+}
+
+void escrever_dados_originais(FILE *descomprimido, unsigned char *data, long i, long filelen, No_d *root, int bits_lixo){
+    No_d *check = root;
+    for(; i < filelen; i++){
+        unsigned char byte = data[i];
+        unsigned char byte_escrito;
+        int j = 7;
+
+        while(j >= 0){
+            if (i == filelen - 1 && j < bits_lixo) return;
+
+            if (byte & ((unsigned char)1 << j)) check = check->dir;
+            else check = check->esq;
+
+            if (!check->eh_galho){
+                fwrite(&(check->item), sizeof(unsigned char), 1, descomprimido);
+                check = root;
+            }
+
+            j--;
+        }
+    }
+}
+
+void descomprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, long filelen){
+    //declarando variaveis
+    int bits_lixo, tamanho_da_arvore;
+    No_d *root = NULL;
+
+    //pegando quantos bits sao lixo no fim do ultimo byte, e o tamanho em bytes da arvore no header
+    bits_lixo = calcula_bits_lixo(data[0]);
+    tamanho_da_arvore = numero_de_bytes_na_arvore_header(data[0], data[1]);
+
+    //comecando a ler a partir do 2º byte (comecando a contar pelo 0º)
+    long i = 2;
+    montando_arvore_de_huffman_para_descomprimir(&root, NULL, data, 2 + tamanho_da_arvore, &i);
+
+    //criando o arquivo descomprimido
+    FILE *arquivo_descomprimido = fopen(nome_novo_arquivo, "wb");
+
+    escrever_dados_originais(arquivo_descomprimido, data, i, filelen, root, bits_lixo);
+
+    //dando free em memoria alocada dinamicamente
+    limpar_memoria_arvore_de_descompressao(root);
+
+    fclose(arquivo_descomprimido);
+
 }
