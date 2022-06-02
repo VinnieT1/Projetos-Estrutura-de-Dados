@@ -227,13 +227,36 @@ void limpar_ascii(char **ascii){
     free(ascii);
 }
 
-void comprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, int filelen){
+void funcao_certa_pra_escrever_os_dados_compactados(FILE *compressed, unsigned char *data, long filelen, char **nova_ascii){
+    unsigned char byte = 0;
+    int j = 7;
+
+    for(long i = 0; i < filelen; i++){
+        char *direcao = nova_ascii[data[i]];
+        for(int index = 0; direcao[index] != 0; index++){
+            if (direcao[index] == '1') byte = byte | (1 << j);
+            j--;
+
+            if (j < 0){
+                fwrite(&byte, sizeof(unsigned char), 1, compressed);
+                j = 7;
+                byte = 0;
+            }
+        }
+    }
+
+    if (j != 7) fwrite(&byte, sizeof(unsigned char), 1, compressed);
+}
+
+void comprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, long filelen){
     //variaveis para montar a arvore
     No *head = NULL;
     long freq[256];
     char **nova_ascii;
     int altura_arvore, num_nos_arvore;
     long new_data_len, num_bytes;
+    printf("declarou vars\n");
+    printf("filelen: %d\n", filelen);
 
     //iniciando as frequencias como 0
     memset(freq, 0, 256*sizeof(long));
@@ -246,32 +269,40 @@ void comprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, int filelen
     //montando a fila de prioridade e a arvore de huffman
     montando_fila_de_prioridade(&head, freq);
     montando_arvore_de_huffman(&head);
-
+    printf("montou arvore\n");
     //pegando informacoes importantes da arvore (altura maxima e numero de nos)
     altura_arvore = altura(head);
     num_nos_arvore = tamanho_arvore(head);
 
     nova_ascii = alocar_ascii(altura_arvore + 1);
     preencher_ascii(head, nova_ascii, "", altura_arvore);
-
+    printf("preencheu ascii\n");
     //calculando o tamanho da string de bits (compactada) e o numero de bytes necessarios
     new_data_len = tamanho_nova_string_de_dados_compactados(data, filelen, nova_ascii);
     num_bytes = new_data_len/8 + (new_data_len % 8 != 0);
 
     //criando a string com os dados compactados e escrevendo os bits nela (deixando +1 byte para o '\0')
-    unsigned char new_data[new_data_len + 1];
-    memset(new_data, 0, sizeof(unsigned char)*(new_data_len + 1));
-    escrever_string_de_dados_compactados(data, filelen, nova_ascii, new_data);
-
+    // printf("criando new_data\n");
+    // printf("new_data_len: %d\n", new_data_len);
+    // unsigned char *new_data = malloc(sizeof(unsigned char)*(new_data_len + 1));
+    // printf("antes do memset\n");
+    // memset(new_data, 0, sizeof(unsigned char)*(new_data_len + 1));
+    // printf("depois do memset\n");
+    // printf("filelen: %ld", new_data_len);
+    // escrever_string_de_dados_compactados(data, filelen, nova_ascii, new_data);
+    // printf("depois de escrever a string new_data\n");
     //tamanho de bytes da arvore
     int tamanho_da_arvore = tamanho_arvore(head);
 
     //escrevendo bytes no novo arquivo (o arquivo compactado)
     FILE *compressed = fopen(nome_novo_arquivo, "wb");
 
+    printf("antes de escrever!\n");
+    
     escrever_header_do_arquivo(compressed, new_data_len, tamanho_da_arvore);
     escrever_arvore_em_arquivo(compressed, head);
-    escrever_informacao_compactada_em_arquivo(compressed, new_data, new_data_len);
+    funcao_certa_pra_escrever_os_dados_compactados(compressed, data, filelen, nova_ascii);
+    //escrever_informacao_compactada_em_arquivo(compressed, new_data, new_data_len);
 
     //DEBUG
     //fwrite(new_data, sizeof(unsigned char), new_data_len, compressed);

@@ -33,7 +33,9 @@ int main(){
                 scanf(" %[^\n]", nome_novo_arquivo);
                 
                 //criando o arquivo comprimido
+                printf("Entrando na compressao...\n");
                 comprimir_arquivo(data, nome_novo_arquivo, filelen);
+                printf("saiu\n");
 
                 //free em enderecos de memoria alocados dinamicamente (evitar memory leak)
                 free(data);
