@@ -52,7 +52,7 @@ void montando_fila_de_prioridade(No **head, long *freq){
     }
 }
 
-//printa a fila de prioridade
+//printa a fila de prioridade (DEBUG)
 void printar_fila(No *no){
     if (no == NULL) return;
     printf("%d %u\n", no->freq, no->item);
@@ -140,7 +140,7 @@ void print_ascii(char **nova_ascii, long *freq){
     }
 }
 
-//retorna o numero de nos da arvore
+//retorna o numero de bytes que devem ser escritos no header
 int tamanho_arvore(No *no){
     if (no == NULL) return 0;
     return 1 + (no->dir == NULL && no->esq == NULL && (no->item == '*' || no->item == '\\')) + tamanho_arvore(no->esq) + tamanho_arvore(no->dir);
