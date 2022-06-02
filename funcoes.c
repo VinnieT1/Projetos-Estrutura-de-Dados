@@ -15,7 +15,6 @@ int altura(No *no){
 }
 
 //cria um no, inicializando os valores dele
-//é dado o item dele e a frequencia como parametros
 No *criar_no(unsigned char carac, long freq){
     No *novo_no = malloc(sizeof(No));
     novo_no->dir = NULL;
@@ -117,8 +116,6 @@ void preencher_ascii(No *no, char **nova_ascii, char *caminho, int stringlen){
 
     if (no->esq == NULL && no->dir == NULL){
         strcpy(nova_ascii[no->item], caminho);
-        printf("CHEGOU AQUI!!!\n");
-        
     }
     else{
         char caminho_esq[stringlen], caminho_dir[stringlen];
@@ -146,36 +143,33 @@ void print_ascii(char **nova_ascii, long *freq){
 //retorna o numero de nos da arvore
 int tamanho_arvore(No *no){
     if (no == NULL) return 0;
-    return 1 + tamanho_arvore(no->esq) + tamanho_arvore(no->dir);
+    return 1 + (no->dir == NULL && no->esq == NULL && (no->item == '*' || no->item == '\\')) + tamanho_arvore(no->esq) + tamanho_arvore(no->dir);
 }
 
+//calcula o numero de bits que serao lixo de memoria no ultimo byte do arquivo
 int calcular_numero_de_bits_de_lixo(char **nova_ascii, long *freq){
     long bits_uteis = 0;
     for(int i = 0; i < 256; i++){
         if (freq[i] == 0) continue;
         bits_uteis += freq[i]*strlen(nova_ascii[i]);
-        printf("freq[%d] = %d vezes strlen(%s) = %d eh %d\n", i, freq[i], nova_ascii[i], strlen(nova_ascii[i]), freq[i]*strlen(nova_ascii[i]));
         bits_uteis = bits_uteis % 8;   
     }
 
-    return 8 - bits_uteis;
+    return (8 - bits_uteis) % 8;
 }
 
-void escrever_header_do_arquivo(FILE *compressed, int bits_lixo, int tamanho_arvore){
-    //printf("tamanho da arvore: %d\n", tamanho_arvore);
+//escreve os dois primeiros bytes do header no arquivo (o num de bits de lixo e o numero de nos na arvore)
+void escrever_header_do_arquivo(FILE *compressed, int bits_lixo, int tamanho_da_arvore){
     //calculando o num de bits de lixo no ultimo byte
     unsigned char byte = (unsigned char)bits_lixo;
-    //printf("bits lixo: %u\n", byte);
     //shiftando o valor para os primeiros 3 bits mais significativos do byte
     byte = byte << 5;
-    //printf("byte shiftado: %u", byte);
-    //"encaixando" os bits mais significativos no primeiro byte
-    byte = byte | (tamanho_arvore >> 8);
-    //printf("byte encaixado: %u\n", byte);
+    //"encaixando" os bits mais significativos do numero de nos da arvore no restante do primeiro byte
+    byte = byte | ((unsigned char)(tamanho_da_arvore >> 8));
     //restante do tamanho da arvore
-    unsigned char segundo_byte = (unsigned char)tamanho_arvore;
-    //printf("segundo byte: %u\n", segundo_byte);
+    unsigned char segundo_byte = (unsigned char)tamanho_da_arvore;
 
+    //escrevendo os bytes no arquivo
     fwrite(&byte, sizeof(unsigned char), 1, compressed);
     fwrite(&segundo_byte, sizeof(unsigned char), 1, compressed);
 }
@@ -233,12 +227,10 @@ void comprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, long filele
     long freq[256];
     char **nova_ascii;
     int altura_arvore, num_nos_arvore;
-    int bits_lixo;
-    //printf("filelen: %d\n", filelen);
+    int bits_lixo, tamanho_da_arvore;
 
     //iniciando as frequencias como 0
-    //memset(freq, 0, 256*sizeof(long));
-    for(int i = 0; i < 256; i++) freq[i] = 0;
+    memset(freq, 0, 256*sizeof(long));
 
     //obtendo frequencias dos bytes
     for(long i = 0; i < filelen; i++){
@@ -247,50 +239,32 @@ void comprimir_arquivo(unsigned char *data, char *nome_novo_arquivo, long filele
 
     //montando a fila de prioridade e a arvore de huffman
     montando_fila_de_prioridade(&head, freq);
-    printf("fila: ");
-    printar_fila(head);
     montando_arvore_de_huffman(&head);
-    printf("Arvore: ");
-    printar_arvore(head);
-    printf("\n");
+
     //pegando informacoes importantes da arvore (altura maxima e numero de nos)
-    printf("altura...\n");
     altura_arvore = altura(head);
-    printf("num nos...\n");
     num_nos_arvore = tamanho_arvore(head);
 
-    printf("ascii... altura_arvore = %d\n", altura_arvore);
+    //alocando a "nova tabela ascii" e preenchendo ela
     nova_ascii = alocar_ascii(altura_arvore + 1);
-    printf("preencher ascii...\n");
     preencher_ascii(head, nova_ascii, "", altura_arvore + 1);
-    printf("ascii a: %s\n", nova_ascii['A']);
-    //print_ascii(nova_ascii, freq);
 
-    printf("tamanho_arvore...");
-    int tamanho_da_arvore = tamanho_arvore(head);
+    //calculando o tamanho da arvore em bytes e o numero de bits de lixo no ultimo byte
+    tamanho_da_arvore = tamanho_arvore(head);
     bits_lixo = calcular_numero_de_bits_de_lixo(nova_ascii, freq);
-    printf("bits_lixo eh: %d\n", bits_lixo);
-    //escrevendo bytes no novo arquivo (o arquivo compactado)
+
+    //ponteiro para o novo arquivo
     FILE *compressed = fopen(nome_novo_arquivo, "wb");
 
-    printf("antes de escrever!\n");
-    
+    //escrever os bytes no novo arquivo
     escrever_header_do_arquivo(compressed, bits_lixo, tamanho_da_arvore);
     escrever_arvore_em_arquivo(compressed, head);
     escrever_os_dados_compactados(compressed, data, filelen, nova_ascii);
-    // for(int i = 0; i < 256; i++){
-    //     printf("%d: %s\n", i, nova_ascii[i]);
-    // }
 
-    //DEBUG
-    //fwrite(new_data, sizeof(unsigned char), new_data_len, compressed);
-    // printf("Tamanho da arvore: %d\n", tamanho_arvore);
-    // printf("Arvore:\n");
-    // printar_arvore(head);
-    // printf("\n");
-
+    //dando free na memoria dinamicamente alocada
     limpar_memoria_arvore(head);
     limpar_ascii(nova_ascii);
 
+    //fechando o ponteiro do arquivo
     fclose(compressed);
 }
