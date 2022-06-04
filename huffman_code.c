@@ -92,6 +92,10 @@ int main(){
 
         }
         else if (escolha == 3) break;
+        else{
+            system("cls || clear");
+            printf("Escolha invalida! Tente novamente!\n\n");
+        }
     }
 
     return 0;
