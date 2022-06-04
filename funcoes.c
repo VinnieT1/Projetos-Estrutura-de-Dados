@@ -279,7 +279,8 @@ No_d *criar_no_d(unsigned char item, short eh_galho){
     No_d *novo_no_d = malloc(sizeof(No_d));
     novo_no_d->dir = NULL;
     novo_no_d->esq = NULL;
-    novo_no_d->item = item;
+    novo_no_d->item = malloc(sizeof(unsigned char));
+    memcpy(novo_no_d->item, &item, sizeof(unsigned char));
     novo_no_d->eh_galho = eh_galho;
 
     return novo_no_d;
@@ -287,7 +288,7 @@ No_d *criar_no_d(unsigned char item, short eh_galho){
 
 void printar_arvore_d(No_d *no){
     if (no == NULL) return;
-    printf("%c", no->item);
+    printf("%c", *((char *) no->item));
     printar_arvore_d(no->esq);
     printar_arvore_d(no->dir);
 }
@@ -296,6 +297,7 @@ void limpar_memoria_arvore_de_descompressao(No_d *no){
     if (no == NULL) return;
     limpar_memoria_arvore_de_descompressao(no->esq);
     limpar_memoria_arvore_de_descompressao(no->dir);
+    free(no->item);
     free(no);
 }
 
@@ -311,26 +313,31 @@ void montando_arvore_de_huffman_para_descomprimir(No_d **root, No_d *atual, unsi
         short eh_galho = 0;
         if (data[*i] == (unsigned char)'*') eh_galho = 1;
         if (data[*i] == (unsigned char)'\\') (*i)++;
-        if (atual->eh_galho) atual->esq = criar_no_d(data[*i], eh_galho);
-
-        (*i)++;
-        if (eh_galho) montando_arvore_de_huffman_para_descomprimir(root, atual->esq, data, indice_maximo, i);
+        if (atual->eh_galho){
+            atual->esq = criar_no_d(data[*i], eh_galho);
+            (*i)++;
+            if (eh_galho) montando_arvore_de_huffman_para_descomprimir(root, atual->esq, data, indice_maximo, i);
+        }
+        
+        if (*i >= indice_maximo) return;
 
         eh_galho = 0;
         if (data[*i] == (unsigned char)'*') eh_galho = 1;
         if (data[*i] == (unsigned char)'\\') (*i)++;
-        if (atual->eh_galho) atual->dir = criar_no_d(data[*i], eh_galho);
-
-        (*i)++;
-        if (eh_galho) montando_arvore_de_huffman_para_descomprimir(root, atual->dir, data, indice_maximo, i);
+        if (atual->eh_galho){
+            atual->dir = criar_no_d(data[*i], eh_galho);
+            (*i)++;
+            if (eh_galho) montando_arvore_de_huffman_para_descomprimir(root, atual->dir, data, indice_maximo, i);
+        }
     }
+        
+        
 }
 
 void escrever_dados_originais(FILE *descomprimido, unsigned char *data, long i, long filelen, No_d *root, int bits_lixo){
     No_d *check = root;
     for(; i < filelen; i++){
         unsigned char byte = data[i];
-        unsigned char byte_escrito;
         int j = 7;
 
         while(j >= 0){
@@ -340,7 +347,7 @@ void escrever_dados_originais(FILE *descomprimido, unsigned char *data, long i, 
             else check = check->esq;
 
             if (!check->eh_galho){
-                fwrite(&(check->item), sizeof(unsigned char), 1, descomprimido);
+                fwrite(((char *)check->item), sizeof(unsigned char), 1, descomprimido);
                 check = root;
             }
 

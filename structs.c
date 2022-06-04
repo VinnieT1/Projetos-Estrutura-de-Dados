@@ -10,6 +10,6 @@ typedef struct No{
 typedef struct No_d{
     struct No_d *esq;
     struct No_d *dir;
-    unsigned char item;
+    void *item;
     short eh_galho;
 } No_d;
