@@ -112,32 +112,45 @@ void limpar_arvore(BinaryTree *no){
     free(no);
 }
 
+void calcular_maior_comparacao_arvore(BinaryTree *no, int *i, int comparacoes){
+    if (no == NULL){
+        if (comparacoes > *i) *i = comparacoes;
+        return;
+    }
+
+    calcular_maior_comparacao_arvore(no->esq, i, comparacoes + 1);
+    calcular_maior_comparacao_arvore(no->dir, i, comparacoes + 1);
+}
+
 int main(){
     int indice_random;
     BinaryTree *root = NULL;
     No *head = NULL;
-    FILE *dados;
+    FILE *dados, *maiores_comparacoes;
 
     srand(time(NULL));
 
-    dados = fopen("dados.txt", "w");
+    dados = fopen("dados.txt", "a");
+    maiores_comparacoes = fopen("maiores_comparacoes.txt", "a");
 
-    for(int n = 1000; n <= 10000; n++){
-        int numeros_inseridos[n];
+    for(int n = 44100; n <= 100000; n += 50){
+        int numeros_inseridos[n], maior_comparacao_possivel_lista = n + 1, maior_comparacao_possivel_arvore = 0;
         criar_valores_e_inserir(n, &head, &root, numeros_inseridos);
-        
-        for(int i = 0; i < 10; i++){
-            indice_random = rand() % n;
-            fprintf(dados, "%d %d %d\n", n, procurar_lista_encadeada(head, numeros_inseridos[indice_random]), procurar_arvore_binaria(root, numeros_inseridos[indice_random]));
-        }
+    
+        calcular_maior_comparacao_arvore(root, &maior_comparacao_possivel_arvore, 1);
+
+        indice_random = rand() % n;
+        fprintf(dados, "%d %d %d\n", n, procurar_lista_encadeada(head, numeros_inseridos[indice_random]), procurar_arvore_binaria(root, numeros_inseridos[indice_random]));
+        fprintf(maiores_comparacoes, "%d %d %d\n", n, maior_comparacao_possivel_lista, maior_comparacao_possivel_arvore);
 
         limpar_arvore(root);
         root = NULL;
         limpar_lista(head);
         head = NULL;
     }
-    
+
     fclose(dados);
+    fclose(maiores_comparacoes);
 
     printf("Finalizado!\n");
 
