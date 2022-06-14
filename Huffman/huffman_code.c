@@ -13,7 +13,6 @@ int main(){
         if (escolha == 1){
             //declarando variaveis
             char nome_arquivo[256], nome_novo_arquivo[256];
-            long freq[256];
             unsigned char *data;
             long filelen;
 

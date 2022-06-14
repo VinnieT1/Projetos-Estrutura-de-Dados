@@ -6,7 +6,7 @@ typedef struct No{
     unsigned char item;
 } No;
 
-//No_d eh No_descompressao
+//No_d para descompressão
 typedef struct No_d{
     struct No_d *esq;
     struct No_d *dir;
