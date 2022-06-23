@@ -163,7 +163,7 @@ TrieNode *remove_node_rec(TrieNode *node, unsigned char *text, int i, bool *remo
     return node;
 }
 
-bool *remove_node(TrieNode **root, char *signed_text){
+bool remove_node(TrieNode **root, char *signed_text){
     if (*root == NULL) return false;
 
     unsigned char *text = (unsigned char *)signed_text;
