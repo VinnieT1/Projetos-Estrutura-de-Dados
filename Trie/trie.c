@@ -72,7 +72,7 @@ void auto_complete_rec(TrieNode *node, unsigned char *prefix, int len){
     strcpy(text, prefix);
     text[len] = '\0';
 
-    if (node->terminal) printf("%s\n", (char *)text);
+    if (node->terminal) printf("%s\n", (char *)prefix);
 
     for(int i = 0; i < NUM_CHAR; i++){
         if (node->children[i] != NULL){
@@ -90,17 +90,17 @@ void auto_complete(TrieNode *root, char *prefix){
 
     TrieNode *check = root;
     int len = strlen(prefix);
-
+    unsigned char *unsigned_text = (unsigned char *)prefix;
 
     for(int i = 0; i < len; i++){
-        if (check->children[prefix[i]] == NULL){
+        if (check->children[unsigned_text[i]] == NULL){
             printf("NO MATCH!\n");
             return;
         }
-        check = check->children[prefix[i]];
+        check = check->children[unsigned_text[i]];
     }
 
-    auto_complete_rec(check, (unsigned char *)prefix, len + 1);
+    auto_complete_rec(check, unsigned_text, len + 1);
 }
 
 void search_trie(TrieNode *root, char *text){
@@ -110,11 +110,11 @@ void search_trie(TrieNode *root, char *text){
     TrieNode *check = root;
 
     for(int i = 0; i < len; i++){
-        if (check->children[text[i]] == NULL){
+        if (check->children[unsigned_text[i]] == NULL){
             printf("%s NOT FOUND\n", text);
             return;
         }
-        check = check->children[text[i]];
+        check = check->children[unsigned_text[i]];
     }
 
     printf((check->terminal ? "%s FOUND\n" : "%s NOT FOUND\n"), text);
@@ -177,16 +177,11 @@ bool remove_node(TrieNode **root, char *signed_text){
 int main(){
     TrieNode *root = NULL;
 
-    insert_node(&root, "KINDRED");
-    insert_node(&root, "KIN");
-    insert_node(&root, "KID");
-    insert_node(&root, "COZY");
-    insert_node(&root, "COLD");
+    insert_node(&root, "CARRO");
+    insert_node(&root, "CARTA");
+    insert_node(&root, "CAVALO");
 
-    //print_trie(root);
-
-    // auto_complete(root, "KI");
-    // search_trie(root, "KIN");
+    auto_complete(root, "CAR");
 
     return 0;
 }
