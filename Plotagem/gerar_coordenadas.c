@@ -133,7 +133,7 @@ int main(){
     dados = fopen("dados.txt", "a");
     maiores_comparacoes = fopen("maiores_comparacoes.txt", "a");
 
-    for(int n = 44100; n <= 100000; n += 50){
+    for(int n = 1000; n <= 44000; n += 50){
         int numeros_inseridos[n], maior_comparacao_possivel_lista = n + 1, maior_comparacao_possivel_arvore = 0;
         criar_valores_e_inserir(n, &head, &root, numeros_inseridos);
     
