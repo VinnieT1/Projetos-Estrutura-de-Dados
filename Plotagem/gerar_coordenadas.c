@@ -130,8 +130,8 @@ int main(){
 
     srand(time(NULL));
 
-    dados = fopen("dados.txt", "a");
-    maiores_comparacoes = fopen("maiores_comparacoes.txt", "a");
+    dados = fopen("dados.txt", "w");
+    maiores_comparacoes = fopen("maiores_comparacoes.txt", "w");
 
     for(int n = 1000; n <= 44000; n += 50){
         int numeros_inseridos[n], maior_comparacao_possivel_lista = n + 1, maior_comparacao_possivel_arvore = 0;
