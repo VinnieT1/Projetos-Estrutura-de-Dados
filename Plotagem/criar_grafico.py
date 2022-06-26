@@ -1,5 +1,3 @@
-from cProfile import label
-from curses import color_content
 from math import log2
 import matplotlib.pyplot as plt
 import numpy as np
